@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>订单级收入对账报告 - 业财融合系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .sidebar-item.active { background-color: #eff6ff; color: #2563eb; border-right: 3px solid #2563eb; }
+        .sidebar-item:hover { background-color: #f4f4f5; }
+        .drawer { transform: translateX(100%); transition: transform 0.3s ease-in-out; }
+        .drawer.open { transform: translateX(0); }
+        .modal-backdrop { opacity: 0; transition: opacity 0.2s ease-in-out; }
+        .modal-backdrop.show { opacity: 1; }
+        .toast { animation: slideIn 0.3s ease-out; }
+        @keyframes slideIn { from { transform: translateY(-100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        button:hover { filter: brightness(1.05); }
+        button:active { transform: scale(0.98); }
+        .btn-disabled { opacity: 0.6; cursor: not-allowed; }
+        .btn-disabled:hover { filter: none; }
+        .btn-disabled:active { transform: none; }
+        .tab-item { cursor: pointer; padding: 0.5rem 0; border-bottom: 2px solid transparent; font-medium text-gray-500; transition: all 0.2s; }
+        .tab-item:hover { color: #2563eb; }
+        .tab-item.active { color: #2563eb; border-bottom-color: #2563eb; }
+        .diff-type-MATCH { background-color: #d1fae5; color: #065f46; }
+        .diff-type-AMOUNT_DIFF { background-color: #fee2e2; color: #991b1b; }
+        .diff-type-ONLY_FMS { background-color: #fef3c7; color: #92400e; }
+        .diff-type-ONLY_AMZ { background-color: #dbeafe; color: #1e40af; }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="flex h-screen overflow-hidden">
+        <!-- 左侧菜单 -->
+        <aside class="w-64 bg-white border-r border-gray-200 flex flex-col flex-shrink-0">
+            <div class="h-16 flex items-center px-6 border-b border-gray-200">
+                <div class="flex items-center">
+                    <svg class="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                    <span class="ml-2 font-bold text-xl text-gray-900">业财融合系统</span>
+                </div>
+            </div>
+            <nav class="flex-1 py-4 overflow-y-auto">
+                <div class="px-4 mb-2"><span class="text-xs font-medium text-gray-400 uppercase tracking-wider">主要功能</span></div>
+                <a href="#" class="sidebar-item flex items-center px-6 py-3 text-gray-700" data-page="dashboard">
+                    <svg class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+                    <span>首页</span>
+                </a>
+                <a href="#" class="sidebar-item flex items-center px-6 py-3 text-gray-700" data-page="receivable">
+                    <svg class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    <span>应收账单</span>
+                </a>
+                <a href="#" class="sidebar-item flex items-center px-6 py-3 text-gray-700" data-page="payable">
+                    <svg class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                    <span>应付账单</span>
+                </a>
+                <a href="#" class="sidebar-item active flex items-center px-6 py-3 text-gray-700" data-page="order-reconciliation">
+                    <svg class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
+                    <span>订单级对账</span>
+                </a>
+                <a href="#" class="sidebar-item flex items-center px-6 py-3 text-gray-700" data-page="writeoff">
+                    <svg class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    <span>核销中心</span>
+                </a>
+            </nav>
+            <div class="p-4 border-t border-gray-200">
+                <div class="flex items-center">
+                    <div class="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-medium">管</div>
+                    <div class="ml-3">
+                        <div class="text-sm font-medium text-gray-900">管理员</div>
+                        <div class="text-xs text-gray-500">admin@company.com</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 主内容区 -->
+        <main class="flex-1 overflow-y-auto">
+            <div id="main-content" class="p-6">
+                <!-- 需求说明 -->
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0 mt-1">
+                            <svg class="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <div class="ml-3 flex-1">
+                            <h3 class="text-sm font-medium text-blue-800">需求说明</h3>
+                            <div class="mt-2 text-sm text-blue-700">
+                                <p>订单级收入对账报告：构建按订单粒度的收入对账报表，实现FMS订单收入与Amazon交易报告收入的核对。</p>
+                                <p class="mt-1">核心功能：按月查询、全量展示、自动计算差异、异常分类、明细合计行。</p>
+                                <p class="mt-1">匹配规则：店铺 + 平台订单号 + 货币，必须同时满足三者一致才视为同一订单。</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">订单级收入对账报告</h1>
+                        <p class="text-sm text-gray-500 mt-1">订单级收入口径统一 + 差异显性化</p>
+                    </div>
+                </div>
+
+                <!-- 查询条件 -->
+                <div class="bg-white rounded-lg border border-gray-200 p-4 mt-6">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">对账月份</label>
+                            <input type="month" id="filter-month" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="2026-02">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">店铺</label>
+                            <select id="filter-store" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">全部店铺</option>
+                                <option value="Amazon-US">Amazon-US</option>
+                                <option value="Amazon-EU">Amazon-EU</option>
+                                <option value="eBay-US">eBay-US</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">异常类型</label>
+                            <select id="filter-diff-type" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">全部类型</option>
+                                <option value="MATCH">匹配成功</option>
+                                <option value="AMOUNT_DIFF">金额差异</option>
+                                <option value="ONLY_FMS">仅FMS存在</option>
+                                <option value="ONLY_AMZ">仅交易报告存在</option>
+                            </select>
+                        </div>
+                        <div class="flex items-end space-x-2">
+                            <button onclick="queryReconciliation()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">查询</button>
+                            <button onclick="exportReport()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200">导出</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 统计信息 -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
+                    <div class="bg-white rounded-lg border border-gray-200 p-4">
+                        <p class="text-sm text-gray-500">订单总数</p>
+                        <p class="text-2xl font-bold text-gray-900 mt-1">1,248</p>
+                    </div>
+                    <div class="bg-white rounded-lg border border-gray-200 p-4">
+                        <p class="text-sm text-gray-500">匹配成功</p>
+                        <p class="text-2xl font-bold text-green-600 mt-1">1,120</p>
+                    </div>
+                    <div class="bg-white rounded-lg border border-gray-200 p-4">
+                        <p class="text-sm text-gray-500">金额差异</p>
+                        <p class="text-2xl font-bold text-red-600 mt-1">85</p>
+                    </div>
+                    <div class="bg-white rounded-lg border border-gray-200 p-4">
+                        <p class="text-sm text-gray-500">单边存在</p>
+                        <p class="text-2xl font-bold text-yellow-600 mt-1">43</p>
+                    </div>
+                </div>
+
+                <!-- 对账明细表格 -->
+                <div class="bg-white rounded-lg border border-gray-200 mt-6">
+                    <div class="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+                        <h3 class="text-sm font-medium text-gray-900">对账明细</h3>
+                        <span class="text-sm text-gray-500">共 1,248 条记录</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">店铺</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">平台订单号</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">货币</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">交易报告日期</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">订单日期</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">FMS订单金额</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">交易报告金额</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">FMS发票号</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">金额差异</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">异常类型</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200" id="reconciliation-table-body">
+                                <!-- 数据将通过JavaScript动态生成 -->
+                            </tbody>
+                            <tfoot class="bg-gray-50">
+                                <tr>
+                                    <td colspan="5" class="px-4 py-3 text-right font-medium text-gray-700">合计：</td>
+                                    <td class="px-4 py-3 text-right font-bold text-gray-900">¥1,248,500.00</td>
+                                    <td class="px-4 py-3 text-right font-bold text-gray-900">¥1,247,850.00</td>
+                                    <td class="px-4 py-3"></td>
+                                    <td class="px-4 py-3 text-right font-bold text-red-600">¥650.00</td>
+                                    <td class="px-4 py-3"></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    <!-- 分页 -->
+                    <div class="px-4 py-3 border-t border-gray-200 flex items-center justify-between">
+                        <div class="text-sm text-gray-500">显示 1-50 条，共 1,248 条</div>
+                        <div class="flex items-center space-x-2">
+                            <button class="px-3 py-1 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50">上一页</button>
+                            <button class="px-3 py-1 bg-blue-600 text-white rounded-md text-sm">1</button>
+                            <button class="px-3 py-1 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50">2</button>
+                            <button class="px-3 py-1 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50">3</button>
+                            <button class="px-3 py-1 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50">下一页</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast容器 -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
+
+    <script>
+        // 模拟数据
+        const reconciliationData = [
+            { 
+                store: 'Amazon-US', 
+                orderId: '123-4567890-1234567', 
+                currency: 'USD', 
+                transactionDate: '2026-02-15', 
+                orderDate: '2026-02-15', 
+                fmsAmount: 199.99, 
+                transactionAmount: 199.99, 
+                invoiceNo: 'INV-2026-0001', 
+                diffAmount: 0, 
+                diffType: 'MATCH' 
+            },
+            { 
+                store: 'Amazon-US', 
+                orderId: '123-4567891-1234568', 
+                currency: 'USD', 
+                transactionDate: '2026-02-16', 
+                orderDate: '2026-02-16', 
+                fmsAmount: 299.99, 
+                transactionAmount: 299.99, 
+                invoiceNo: 'INV-2026-0002', 
+                diffAmount: 0, 
+                diffType: 'MATCH' 
+            },
+            { 
+                store: 'Amazon-US', 
+                orderId: '123-4567892-1234569', 
+                currency: 'USD', 
+                transactionDate: '2026-02-17', 
+                orderDate: '2026-02-17', 
+                fmsAmount: 159.99, 
+                transactionAmount: 149.99, 
+                invoiceNo: 'INV-2026-0003', 
+                diffAmount: 10.00, 
+                diffType: 'AMOUNT_DIFF' 
+            },
+            { 
+                store: 'Amazon-EU', 
+                orderId: '456-7890123-4567890', 
+                currency: 'EUR', 
+                transactionDate: '2026-02-18', 
+                orderDate: '2026-02-18', 
+                fmsAmount: 89.99, 
+                transactionAmount: 89.99, 
+                invoiceNo: 'INV-2026-0004', 
+                diffAmount: 0, 
+                diffType: 'MATCH' 
+            },
+            { 
+                store: 'Amazon-EU', 
+                orderId: '456-7890124-4567891', 
+                currency: 'EUR', 
+                transactionDate: '2026-02-19', 
+                orderDate: '2026-02-19', 
+                fmsAmount: 129.99, 
+                transactionAmount: null, 
+                invoiceNo: 'INV-2026-0005', 
+                diffAmount: 129.99, 
+                diffType: 'ONLY_FMS' 
+            },
+            { 
+                store: 'eBay-US', 
+                orderId: '789-0123456-7890123', 
+                currency: 'USD', 
+                transactionDate: '2026-02-20', 
+                orderDate: null, 
+                fmsAmount: null, 
+                transactionAmount: 79.99, 
+                invoiceNo: '', 
+                diffAmount: -79.99, 
+                diffType: 'ONLY_AMZ' 
+            },
+            { 
+                store: 'Amazon-US', 
+                orderId: '123-4567893-1234570', 
+                currency: 'USD', 
+                transactionDate: '2026-02-21', 
+                orderDate: '2026-02-21', 
+                fmsAmount: 349.99, 
+                transactionAmount: 349.99, 
+                invoiceNo: 'INV-2026-0006', 
+                diffAmount: 0, 
+                diffType: 'MATCH' 
+            },
+            { 
+                store: 'Amazon-US', 
+                orderId: '123-4567894-1234571', 
+                currency: 'USD', 
+                transactionDate: '2026-02-22', 
+                orderDate: '2026-02-22', 
+                fmsAmount: 249.99, 
+                transactionAmount: 259.99, 
+                invoiceNo: 'INV-2026-0007', 
+                diffAmount: -10.00, 
+                diffType: 'AMOUNT_DIFF' 
+            },
+            { 
+                store: 'Amazon-EU', 
+                orderId: '456-7890125-4567892', 
+                currency: 'EUR', 
+                transactionDate: '2026-02-23', 
+                orderDate: '2026-02-23', 
+                fmsAmount: 99.99, 
+                transactionAmount: 99.99, 
+                invoiceNo: 'INV-2026-0008', 
+                diffAmount: 0, 
+                diffType: 'MATCH' 
+            },
+            { 
+                store: 'eBay-US', 
+                orderId: '789-0123457-7890124', 
+                currency: 'USD', 
+                transactionDate: '2026-02-24', 
+                orderDate: '2026-02-24', 
+                fmsAmount: 119.99, 
+                transactionAmount: 119.99, 
+                invoiceNo: 'INV-2026-0009', 
+                diffAmount: 0, 
+                diffType: 'MATCH' 
+            }
+        ];
+
+        // 工具函数
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const bgColor = type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500';
+            toast.className = `toast ${bgColor} text-white px-6 py-3 rounded-lg shadow-lg flex items-center space-x-2`;
+            toast.innerHTML = `
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    ${type === 'success' ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />' : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />'}
+                </svg>
+                <span>${message}</span>
+            `;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        function formatNumber(num, currency = 'CNY') {
+            const symbols = { CNY: '¥', USD: '$', EUR: '€', JPY: '¥', SGD: 'S$', MYR: 'RM' };
+            return (symbols[currency] || '¥') + (num !== null ? num.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-');
+        }
+
+        function getDiffTypeBadge(diffType) {
+            const types = {
+                'MATCH': { text: '匹配成功', class: 'diff-type-MATCH' },
+                'AMOUNT_DIFF': { text: '金额差异', class: 'diff-type-AMOUNT_DIFF' },
+                'ONLY_FMS': { text: '仅FMS存在', class: 'diff-type-ONLY_FMS' },
+                'ONLY_AMZ': { text: '仅交易报告存在', class: 'diff-type-ONLY_AMZ' }
+            };
+            const type = types[diffType] || { text: '未知', class: 'bg-gray-100 text-gray-800' };
+            return `<span class="px-2 py-1 text-xs font-medium rounded-full ${type.class}">${type.text}</span>`;
+        }
+
+        // 渲染表格数据
+        function renderTableData(data) {
+            const tbody = document.getElementById('reconciliation-table-body');
+            tbody.innerHTML = data.map(item => `
+                <tr>
+                    <td class="px-4 py-3 text-sm text-gray-900">${item.store}</td>
+                    <td class="px-4 py-3 text-sm text-blue-600">${item.orderId}</td>
+                    <td class="px-4 py-3 text-sm text-gray-900">${item.currency}</td>
+                    <td class="px-4 py-3 text-sm text-gray-900">${item.transactionDate || '-'}</td>
+                    <td class="px-4 py-3 text-sm text-gray-900">${item.orderDate || '-'}</td>
+                    <td class="px-4 py-3 text-sm text-gray-900 text-right font-medium">${formatNumber(item.fmsAmount, item.currency)}</td>
+                    <td class="px-4 py-3 text-sm text-gray-900 text-right">${formatNumber(item.transactionAmount, item.currency)}</td>
+                    <td class="px-4 py-3 text-sm text-gray-900">${item.invoiceNo || '-'}</td>
+                    <td class="px-4 py-3 text-sm ${item.diffAmount !== 0 ? 'text-red-600' : 'text-gray-900'} text-right font-medium">${formatNumber(item.diffAmount, item.currency)}</td>
+                    <td class="px-4 py-3 text-center">${getDiffTypeBadge(item.diffType)}</td>
+                </tr>
+            `).join('');
+        }
+
+        // 查询功能
+        function queryReconciliation() {
+            const month = document.getElementById('filter-month').value;
+            const store = document.getElementById('filter-store').value;
+            const diffType = document.getElementById('filter-diff-type').value;
+            
+            let filteredData = reconciliationData;
+            
+            if (store) {
+                filteredData = filteredData.filter(item => item.store === store);
+            }
+            
+            if (diffType) {
+                filteredData = filteredData.filter(item => item.diffType === diffType);
+            }
+            
+            renderTableData(filteredData);
+            showToast(`查询完成，共找到 ${filteredData.length} 条记录`);
+        }
+
+        // 导出功能
+        function exportReport() {
+            showToast('报告导出功能开发中');
+        }
+
+        // 页面加载时渲染数据
+        document.addEventListener('DOMContentLoaded', function() {
+            renderTableData(reconciliationData);
+        });
+    </script>
+</body>
+</html>
